@@ -1,13 +1,17 @@
 from flask import Blueprint, request, jsonify
 from functools import wraps
 import mysql.connector
+from flask_cors import CORS
 
 admin_bp = Blueprint('admin', __name__)
+CORS(admin_bp, supports_credentials=True)
+
 
 def get_db_connection():
     """Import from main app"""
     from app import get_db_connection as get_conn
     return get_conn()
+
 
 def admin_required(f):
     """Decorator to check if user is admin"""
@@ -18,22 +22,24 @@ def admin_required(f):
         user_id = request.headers.get('X-User-Id')
         if not user_id:
             return jsonify({'error': 'Unauthorized'}), 401
-        
+
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute("SELECT is_admin FROM users WHERE user_id = %s", (user_id,))
+            cursor.execute(
+                "SELECT is_admin FROM users WHERE user_id = %s", (user_id,))
             user = cursor.fetchone()
             if not user or not user['is_admin']:
                 return jsonify({'error': 'Admin access required'}), 403
         finally:
             cursor.close()
             conn.close()
-        
+
         return f(*args, **kwargs)
     return decorated_function
 
 # ============= USER MANAGEMENT =============
+
 
 @admin_bp.route('/users', methods=['GET'])
 @admin_required
@@ -55,16 +61,17 @@ def get_users():
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/users/<int:user_id>/privilege', methods=['PUT'])
 @admin_required
 def update_user_privilege(user_id):
     """Update user admin privilege"""
     data = request.get_json()
     is_admin = data.get('is_admin')
-    
+
     if is_admin is None:
         return jsonify({'error': 'is_admin field required'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -77,6 +84,7 @@ def update_user_privilege(user_id):
     finally:
         cursor.close()
         conn.close()
+
 
 @admin_bp.route('/users/audit-log', methods=['GET'])
 @admin_required
@@ -104,16 +112,17 @@ def get_audit_log():
 
 # ============= TEAM MANAGEMENT =============
 
+
 @admin_bp.route('/teams', methods=['POST'])
 @admin_required
 def add_team():
     """Add a new team"""
     data = request.get_json()
-    
+
     required_fields = ['name', 'league_id']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -125,11 +134,11 @@ def add_team():
             data.get('coach_id'),
             data.get('cresturl')
         ))
-        
+
         # Get the result
         for result in cursor.stored_results():
             team_id = result.fetchone()[0]
-        
+
         conn.commit()
         return jsonify({'message': 'Team added successfully', 'team_id': team_id}), 201
     except mysql.connector.Error as e:
@@ -139,16 +148,17 @@ def add_team():
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/teams/<int:team_id>', methods=['PUT'])
 @admin_required
 def update_team(team_id):
     """Update an existing team"""
     data = request.get_json()
-    
+
     required_fields = ['name', 'league_id']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -170,6 +180,7 @@ def update_team(team_id):
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/teams/<int:team_id>', methods=['DELETE'])
 @admin_required
 def delete_team(team_id):
@@ -189,16 +200,17 @@ def delete_team(team_id):
 
 # ============= PLAYER MANAGEMENT =============
 
+
 @admin_bp.route('/players', methods=['POST'])
 @admin_required
 def add_player():
     """Add a new player"""
     data = request.get_json()
-    
+
     required_fields = ['name', 'team_id', 'position']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -209,11 +221,11 @@ def add_player():
             data.get('date_of_birth'),
             data.get('nationality')
         ))
-        
+
         # Get the result
         for result in cursor.stored_results():
             player_id = result.fetchone()[0]
-        
+
         conn.commit()
         return jsonify({'message': 'Player added successfully', 'player_id': player_id}), 201
     except mysql.connector.Error as e:
@@ -223,16 +235,17 @@ def add_player():
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/players/<int:player_id>', methods=['PUT'])
 @admin_required
 def update_player(player_id):
     """Update an existing player"""
     data = request.get_json()
-    
+
     required_fields = ['name', 'team_id', 'position']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -253,6 +266,7 @@ def update_player(player_id):
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/players/<int:player_id>', methods=['DELETE'])
 @admin_required
 def delete_player(player_id):
@@ -272,16 +286,18 @@ def delete_player(player_id):
 
 # ============= MATCH MANAGEMENT =============
 
+
 @admin_bp.route('/matches', methods=['POST'])
 @admin_required
 def schedule_match():
     """Schedule a new match"""
     data = request.get_json()
-    
-    required_fields = ['season_id', 'league_id', 'matchday', 'home_team_id', 'away_team_id', 'utc_date']
+
+    required_fields = ['season_id', 'league_id', 'matchday',
+                       'home_team_id', 'away_team_id', 'utc_date']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -293,11 +309,11 @@ def schedule_match():
             data['away_team_id'],
             data['utc_date']
         ))
-        
+
         # Get the result
         for result in cursor.stored_results():
             match_id = result.fetchone()[0]
-        
+
         conn.commit()
         return jsonify({'message': 'Match scheduled successfully', 'match_id': match_id}), 201
     except mysql.connector.Error as e:
@@ -307,16 +323,18 @@ def schedule_match():
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/matches/<int:match_id>', methods=['PUT'])
 @admin_required
 def update_match(match_id):
     """Update an existing match"""
     data = request.get_json()
-    
-    required_fields = ['season_id', 'league_id', 'matchday', 'home_team_id', 'away_team_id', 'utc_date']
+
+    required_fields = ['season_id', 'league_id', 'matchday',
+                       'home_team_id', 'away_team_id', 'utc_date']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -338,6 +356,7 @@ def update_match(match_id):
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/matches/<int:match_id>', methods=['DELETE'])
 @admin_required
 def delete_match(match_id):
@@ -355,16 +374,17 @@ def delete_match(match_id):
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/matches/<int:match_id>/score', methods=['PUT'])
 @admin_required
 def update_match_score(match_id):
     """Update match score (triggers will update standings)"""
     data = request.get_json()
-    
+
     required_fields = ['full_time_home', 'full_time_away']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -386,19 +406,21 @@ def update_match_score(match_id):
 
 # ============= UTILITY ENDPOINTS =============
 
+
 @admin_bp.route('/standings/recompute', methods=['POST'])
 @admin_required
 def recompute_standings():
     """Recompute standings for a league and season"""
     data = request.get_json()
-    
+
     if 'league_id' not in data or 'season_id' not in data:
         return jsonify({'error': 'league_id and season_id required'}), 400
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.callproc('sp_recompute_standings', (data['league_id'], data['season_id']))
+        cursor.callproc('sp_recompute_standings',
+                        (data['league_id'], data['season_id']))
         conn.commit()
         return jsonify({'message': 'Standings recomputed successfully'}), 200
     except mysql.connector.Error as e:
@@ -407,6 +429,7 @@ def recompute_standings():
     finally:
         cursor.close()
         conn.close()
+
 
 @admin_bp.route('/leagues', methods=['GET'])
 @admin_required
@@ -424,6 +447,7 @@ def get_all_leagues():
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/seasons', methods=['GET'])
 @admin_required
 def get_all_seasons():
@@ -440,6 +464,7 @@ def get_all_seasons():
         cursor.close()
         conn.close()
 
+
 @admin_bp.route('/stadiums', methods=['GET'])
 @admin_required
 def get_all_stadiums():
@@ -455,6 +480,7 @@ def get_all_stadiums():
     finally:
         cursor.close()
         conn.close()
+
 
 @admin_bp.route('/coaches', methods=['GET'])
 @admin_required
