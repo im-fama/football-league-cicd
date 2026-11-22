@@ -8,7 +8,7 @@ const APP_VERSION = import.meta.env.VITE_APP_VERSION || "dev";
 export default function HomePage() {
   return (
     <div className="home-container">
-      <h1>Welcome to Football League Management System — Deployed with CI/CD by Fatima</h1>
+      <h1>Welcome to Football League Management System</h1>
       <p>Choose your dashboard to continue:</p>
 
       <div className="button-group">
