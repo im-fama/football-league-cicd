@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from user_routes import user_bp
 from admin_routes import admin_bp
 from flask import Flask, jsonify
@@ -5,6 +8,21 @@ from flask_cors import CORS
 from config import Config
 import mysql.connector
 from mysql.connector import pooling
+
+
+def _read_version():
+    """Version shown by /api/health.
+
+    The CI/CD pipeline writes a VERSION file next to this file when it builds
+    the release (e.g. "1.0.12"). Locally there is no such file, so "dev" is used.
+    """
+    version_file = Path(__file__).resolve().parent / 'VERSION'
+    if version_file.exists():
+        return version_file.read_text().strip()
+    return os.environ.get('APP_VERSION', 'dev')
+
+
+APP_VERSION = _read_version()
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -39,12 +57,36 @@ app.register_blueprint(user_bp, url_prefix='/api')
 def index():
     return jsonify({
         'message': 'Football League Management System API',
-        'version': '1.0',
+        'version': APP_VERSION,
         'endpoints': {
             'admin': '/api/admin',
             'user': '/api'
         }
     })
+
+
+@app.route('/api/health')
+def health():
+    """Used by the pipeline's Verify step and by the frontend's status check."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT 1')
+            cursor.fetchone()
+            cursor.close()
+        finally:
+            conn.close()
+        database = 'ok'
+    except mysql.connector.Error:
+        database = 'error'
+
+    status_code = 200 if database == 'ok' else 503
+    return jsonify({
+        'status': 'ok' if database == 'ok' else 'degraded',
+        'version': APP_VERSION,
+        'database': database,
+    }), status_code
 
 
 @app.errorhandler(404)
@@ -58,4 +100,6 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Local development only. In production the app runs under gunicorn, and
+    # debug mode stays off unless FLASK_DEBUG=1 is set (flagged by Bandit B201).
+    app.run(debug=os.environ.get('FLASK_DEBUG') == '1', host='127.0.0.1', port=5000)

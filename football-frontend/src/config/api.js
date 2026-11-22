@@ -1,6 +1,9 @@
-// API base URL - change this based on your environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5173";
-// might have to change to 5000 instead of 5173 if you run on your device
+// API base URL, set per environment:
+//   - local development (.env):        VITE_API_URL=http://127.0.0.1:5000
+//   - production build (.env.production): VITE_API_URL=   (empty)
+// An empty value means "same server as the website", so on AWS the browser
+// calls /api/... on the same address and Nginx forwards it to Flask.
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:5000";
 export const API_ENDPOINTS = {
   // Admin endpoints
   ADMIN: {

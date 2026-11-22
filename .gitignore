@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+.pytest_cache/
+backend/test-results.xml
+backend/VERSION
+
+# Node / React
+node_modules/
+football-frontend/dist/
+
+# Build output
+*.zip
+package/
+
+# Secrets and keys - never commit these
+*.pem
+.env.local

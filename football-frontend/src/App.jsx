@@ -18,6 +18,7 @@ import ViewMatches from "./pages/User/ViewMatches";
 import Search from "./pages/User/Search";
 
 import DashboardLayout from "./components/DashboardLayout";
+import API_BASE_URL from "./config/api";
 
 // Sidebar links
 const adminLinks = [
@@ -42,9 +43,7 @@ export default function App() {
   useEffect(() => {
     const checkAPI = async () => {
       try {
-        const response = await fetch(
-          import.meta.env.VITE_API_URL || "http://localhost:5000"
-        );
+        const response = await fetch(`${API_BASE_URL}/api/health`);
         if (response.ok) {
           setApiStatus("connected");
         } else {
@@ -71,7 +70,7 @@ export default function App() {
             borderBottom: "2px solid #fcc",
           }}
         >
-          ⚠️ Backend API is not responding. Please start the Flask server.
+          ⚠️ Backend API is not responding. Please check that the Flask server and database are running.
         </div>
       )}
 

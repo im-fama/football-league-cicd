@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { leagueService } from "../../services/league.service";
+import { API_ENDPOINTS } from "../../config/api";
 
 export default function ViewLeagues() {
   const [leagues, setLeagues] = useState([]);
@@ -37,7 +38,7 @@ export default function ViewLeagues() {
       setLeagues(leaguesData.leagues || []);
 
       // Load seasons from the API
-      const response = await fetch("http://localhost:5000/api/seasons");
+      const response = await fetch(API_ENDPOINTS.USER.SEASONS);
       const seasonsData = await response.json();
       setSeasons(seasonsData.seasons || []);
 

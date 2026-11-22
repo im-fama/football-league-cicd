@@ -1,6 +1,9 @@
-// src/css/HomePage.jsx
+// src/pages/HomePage.jsx
 import { Link } from "react-router-dom";
 import "../css/HomePage.css";
+
+// Set by the CI/CD pipeline at build time (e.g. "1.0.12"); "dev" when running locally.
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || "dev";
 
 export default function HomePage() {
   return (
@@ -17,6 +20,8 @@ export default function HomePage() {
           <button className="home-btn">User Dashboard</button>
         </Link>
       </div>
+
+      <p className="version-badge">Version {APP_VERSION}</p>
     </div>
   );
 }

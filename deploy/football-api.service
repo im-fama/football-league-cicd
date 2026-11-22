@@ -1,0 +1,17 @@
+[Unit]
+Description=Football League Management System API (Flask on gunicorn)
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+User=www-data
+Group=www-data
+# /opt/football/current points at the release that deploy.sh installed last
+WorkingDirectory=/opt/football/current/backend
+EnvironmentFile=/etc/football/football.env
+ExecStart=/opt/football/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5000 --access-logfile - app:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
